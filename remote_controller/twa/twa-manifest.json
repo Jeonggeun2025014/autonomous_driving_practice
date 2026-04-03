@@ -1,0 +1,9 @@
+{
+  "name": "4Wheel Remote Controller",
+  "short_name": "4W-Remote",
+  "packageId": "com.example.fourwremote",
+  "host": "example.com",
+  "launcherName": "4W Remote",
+  "start_url": "/src/autonomous_driving_practice/remote_controller/index.html",
+  "display": "standalone"
+}
