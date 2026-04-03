@@ -1,0 +1,25 @@
+body { font-family: Arial, sans-serif; margin: 0; background: #fafafa; }
+.top-bar { display:flex; gap:12px; align-items:center; padding:12px; background:#fff; border-bottom:1px solid #eee; }
+#connectBtn { padding:8px 12px; border-radius:6px; }
+#status { color:#666; }
+.container { padding:16px; max-width:420px; margin:0 auto; }
+.speed-row { display:flex; gap:8px; justify-content:center; margin-bottom:18px; }
+.speed { width:48px; height:48px; border-radius:8px; background:#fff; border:1px solid #ddd; font-weight:700 }
+.pad { display:flex; flex-direction:column; gap:8px; align-items:center; }
+.pad-row { display:flex; gap:16px; }
+.dir { width:70px; height:70px; border-radius:35px; background:#fff; border:1px solid #ddd; display:flex; align-items:center; justify-content:center; padding:0 }
+.dir .arrow { width:36px; height:36px; fill:#666; transform-origin:center; transition:transform 0.08s ease, fill 0.08s ease }
+.dir:active { transform:scale(0.96); box-shadow:inset 0 0 6px rgba(0,0,0,0.06) }
+.dir:active .arrow { fill:#222 }
+.center { width:70px; height:70px; }
+
+/* Rotate arrow SVG to point naturally */
+.arrow.up { transform: rotate(0deg) }
+.arrow.down { transform: rotate(180deg) }
+.arrow.left { transform: rotate(-90deg) }
+.arrow.right { transform: rotate(90deg) }
+.arrow.lf { transform: rotate(-45deg) }
+.arrow.rf { transform: rotate(45deg) }
+.arrow.lb { transform: rotate(-135deg) }
+.arrow.rb { transform: rotate(135deg) }
+.log { margin-top:18px; font-family:monospace; white-space:pre-wrap; background:#111; color:#0f0; padding:8px; height:90px; overflow:auto }
