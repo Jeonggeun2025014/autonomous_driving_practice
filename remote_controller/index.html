@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Remote Controller</title>
     <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.json">
   </head>
   <body>
     <div class="top-bar">
-      <button id="connectBtn">Connect</button>
-      <div id="status">Disconnected</div>
+  <button id="connectBtn">Connect</button>
+  <input id="wsUrl" placeholder="ws://<PI_IP>:8765" style="margin-left:8px; padding:6px; border-radius:6px; width:160px" />
+  <div id="status">Disconnected</div>
     </div>
 
     <div class="container">
@@ -23,19 +25,35 @@
 
       <div class="pad">
         <div class="pad-row">
-          <button class="dir" data-dir="LEFT_FORWARD">◀︎</button>
-          <button class="dir" data-dir="FORWARD">▲</button>
-          <button class="dir" data-dir="RIGHT_FORWARD">▶︎</button>
+          <button class="dir" data-dir="LEFT_FORWARD">
+            <svg class="arrow lf" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5 L19 19 H5 Z"/></svg>
+          </button>
+          <button class="dir" data-dir="FORWARD">
+            <svg class="arrow up" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5 L19 19 H5 Z"/></svg>
+          </button>
+          <button class="dir" data-dir="RIGHT_FORWARD">
+            <svg class="arrow rf" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5 L19 19 H5 Z"/></svg>
+          </button>
         </div>
         <div class="pad-row">
-          <button class="dir" data-dir="LEFT">◂</button>
+          <button class="dir" data-dir="LEFT">
+            <svg class="arrow left" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5 L19 19 H5 Z"/></svg>
+          </button>
           <div class="center"></div>
-          <button class="dir" data-dir="RIGHT">▸</button>
+          <button class="dir" data-dir="RIGHT">
+            <svg class="arrow right" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5 L19 19 H5 Z"/></svg>
+          </button>
         </div>
         <div class="pad-row">
-          <button class="dir" data-dir="LEFT_BACK">◀︎</button>
-          <button class="dir" data-dir="BACK">▼</button>
-          <button class="dir" data-dir="RIGHT_BACK">▶︎</button>
+          <button class="dir" data-dir="LEFT_BACK">
+            <svg class="arrow lb" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5 L19 19 H5 Z"/></svg>
+          </button>
+          <button class="dir" data-dir="BACK">
+            <svg class="arrow down" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5 L19 19 H5 Z"/></svg>
+          </button>
+          <button class="dir" data-dir="RIGHT_BACK">
+            <svg class="arrow rb" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5 L19 19 H5 Z"/></svg>
+          </button>
         </div>
       </div>
 
@@ -43,5 +61,13 @@
     </div>
 
     <script src="app.js"></script>
+    <script>
+      // register service worker for PWA installability
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').then(() => {
+          console.log('Service worker registered');
+        }).catch((e) => console.warn('SW register failed', e));
+      }
+    </script>
   </body>
 </html>
