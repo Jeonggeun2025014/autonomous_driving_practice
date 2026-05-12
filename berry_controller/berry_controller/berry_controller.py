@@ -5,6 +5,7 @@ import os
 import threading
 import atexit
 import time
+import math
 
 from flask import Flask, jsonify, render_template
 
@@ -145,15 +146,95 @@ class BerryController(Node):
             motor_stop()
 
     def scan_callback(self, msg):
-        range_count = len(msg.ranges)
-
-        # 정면 방향 거리값
-        front_index = range_count // 2
-        front_distance = msg.ranges[front_index]
+        gap_angle = self.find_widest_gap_angle(msg, safe_distance=0.5)
+        
+        if gap_angle is None:
+            self.get_logger().warn("No safe gap found")
+            return
 
         self.get_logger().info(
-            f"LiDAR received | data count: {range_count}, front distance: {front_distance:.2f} m"
+            f"Widest gap center angle: {gap_angle:.2f} deg"
         )
+
+    def find_widest_gap_angle(self, msg, safe_distance=0.5):
+        range_count = len(msg.ranges)
+
+        front_area = []
+
+        for i, distance in enumerate(msg.ranges):
+            angle_deg = i * 360.0 / range_count
+
+            if angle_deg >= 180.0:
+                angle_deg -= 360.0
+
+            # -90도 ~ 90도만 사용
+            if -90.0 <= angle_deg <= 90.0:
+
+                # NaN은 사용하지 않음
+                if math.isnan(distance):
+                    is_safe = False
+
+                # inf는 장애물이 안 보인다는 의미로 보고 안전한 공간 처리
+                elif math.isinf(distance):
+                    is_safe = True
+
+                elif distance > safe_distance:
+                    is_safe = True
+
+                else:
+                    is_safe = False
+
+                front_area.append((angle_deg, is_safe))
+
+        # 중요: 각도순 정렬
+        front_area.sort(key=lambda x: x[0])
+
+        max_start = None
+        max_end = None
+        current_start = None
+        current_end = None
+
+        for angle_deg, is_safe in front_area:
+            if is_safe:
+                if current_start is None:
+                    current_start = angle_deg
+                current_end = angle_deg
+            else:
+                if current_start is not None:
+                    if max_start is None:
+                        max_start = current_start
+                        max_end = current_end
+                    else:
+                        current_width = current_end - current_start
+                        max_width = max_end - max_start
+
+                        if current_width > max_width:
+                            max_start = current_start
+                            max_end = current_end
+
+                    current_start = None
+                    current_end = None
+
+        # 마지막 gap 처리
+        if current_start is not None:
+            if max_start is None:
+                max_start = current_start
+                max_end = current_end
+            else:
+                current_width = current_end - current_start
+                max_width = max_end - max_start
+
+                if current_width > max_width:
+                    max_start = current_start
+                    max_end = current_end
+
+        if max_start is None:
+            return None
+
+        gap_angle = (max_start + max_end) / 2.0
+
+        return gap_angle
+
 
 controller_node = None
 
