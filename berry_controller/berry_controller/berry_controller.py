@@ -1,10 +1,6 @@
 # # Copyright 2026 Inhatc
 # # Authors: Jeonggeun Lim
 
-
-# Copyright 2026 Inhatc
-# Authors: Jeonggeun Lim
-
 import os
 import threading
 import atexit
@@ -18,19 +14,17 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 
-
 # =========================
 # Flask 설정
 # =========================
-# web 폴더 위치를 현재 파일 기준으로 지정
+# html 폴더 위치를 현재 파일 기준으로 지정
 # 폴더 구조 예:
 # berry_controller/
-# ├── motor/
-# │   └── motor_controller.py
-# └── web/
+# ├── berry_controller.py
+# └── html/
 #     └── web_controller_10_week_4_direction.html
 
-WEB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../web"))
+WEB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../berry_controller/html"))
 app = Flask(__name__, template_folder=WEB_DIR)
 
 
@@ -42,6 +36,11 @@ PWM_PIN_VEL = [19, 21, 23, 25]
 
 PWM_FREQUENCY = 1000
 DEFAULT_SPEED = 40
+
+LEFT_WHEEL_FORWARD = gpio.HIGH
+LEFT_WHEEL_BACKWARD = gpio.LOW
+RIGHT_WHEEL_FORWARD = gpio.LOW
+RIGHT_WHEEL_BACKWARD = gpio.HIGH
 
 gpio.setmode(gpio.BCM)
 gpio.setwarnings(False)
@@ -59,7 +58,6 @@ for pin in PWM_PIN_VEL:
     pwm.start(0)
     pwms.append(pwm)
 
-
 # =========================
 # 모터 제어 함수
 # =========================
@@ -71,51 +69,34 @@ def set_motor(index, direction, speed):
     gpio.output(PWM_PIN_DIR[index], direction)
     pwms[index].ChangeDutyCycle(speed)
 
+def left_wheels(direction, speed):
+    set_motor(0, direction, speed)
+    set_motor(2, direction, speed)
+    
+def right_wheels(direction, speed):
+    set_motor(1, direction, speed)
+    set_motor(3, direction, speed)
+    
 
 def motor_forward(speed=DEFAULT_SPEED):
-    # 왼쪽 모터
-    set_motor(0, gpio.HIGH, speed)
-    set_motor(2, gpio.HIGH, speed)
-
-    # 오른쪽 모터
-    set_motor(1, gpio.LOW, speed)
-    set_motor(3, gpio.LOW, speed)
-
+    left_wheels(LEFT_WHEEL_FORWARD, speed)
+    right_wheels(RIGHT_WHEEL_FORWARD, speed)
 
 def motor_backward(speed=DEFAULT_SPEED):
-    # 왼쪽 모터
-    set_motor(0, gpio.LOW, speed)
-    set_motor(2, gpio.LOW, speed)
-
-    # 오른쪽 모터
-    set_motor(1, gpio.HIGH, speed)
-    set_motor(3, gpio.HIGH, speed)
-
+    left_wheels(LEFT_WHEEL_BACKWARD, speed)
+    right_wheels(RIGHT_WHEEL_BACKWARD, speed)
 
 def motor_left(speed=DEFAULT_SPEED):
-    # 왼쪽 모터 후진
-    set_motor(0, gpio.LOW, speed)
-    set_motor(2, gpio.LOW, speed)
-
-    # 오른쪽 모터 전진
-    set_motor(1, gpio.LOW, speed)
-    set_motor(3, gpio.LOW, speed)
-
+    left_wheels(LEFT_WHEEL_BACKWARD, speed)
+    right_wheels(RIGHT_WHEEL_FORWARD, speed)
 
 def motor_right(speed=DEFAULT_SPEED):
-    # 왼쪽 모터 전진
-    set_motor(0, gpio.HIGH, speed)
-    set_motor(2, gpio.HIGH, speed)
-
-    # 오른쪽 모터 후진
-    set_motor(1, gpio.HIGH, speed)
-    set_motor(3, gpio.HIGH, speed)
-
+    left_wheels(LEFT_WHEEL_FORWARD, speed)
+    right_wheels(RIGHT_WHEEL_BACKWARD, speed)
 
 def motor_stop():
     for pwm in pwms:
         pwm.ChangeDutyCycle(0)
-
 
 # =========================
 # ROS2 Node
@@ -165,47 +146,40 @@ class BerryController(Node):
         else:
             motor_stop()
 
-
 controller_node = None
-
 
 # =========================
 # Flask 라우터
 # =========================
 @app.route("/")
 def index():
+    print(WEB_DIR)
     return render_template("web_controller_10_week_4_direction.html")
-
 
 @app.route("/forward")
 def forward():
     controller_node.publish_cmd_vel(0.2, 0.0)
     return jsonify({"status": "forward"})
 
-
 @app.route("/backward")
 def backward():
     controller_node.publish_cmd_vel(-0.2, 0.0)
     return jsonify({"status": "backward"})
-
 
 @app.route("/left")
 def left():
     controller_node.publish_cmd_vel(0.0, 0.5)
     return jsonify({"status": "left"})
 
-
 @app.route("/right")
 def right():
     controller_node.publish_cmd_vel(0.0, -0.5)
     return jsonify({"status": "right"})
 
-
 @app.route("/stop")
 def stop():
     controller_node.publish_cmd_vel(0.0, 0.0)
     return jsonify({"status": "stop"})
-
 
 # =========================
 # Flask 실행 함수
@@ -218,21 +192,16 @@ def run_flask():
         use_reloader=False
     )
 
-
 # =========================
 # 종료 처리
 # =========================
 def cleanup():
     motor_stop()
-
     for pwm in pwms:
         pwm.stop()
-
     gpio.cleanup()
 
-
 atexit.register(cleanup)
-
 
 # =========================
 # main
@@ -250,15 +219,12 @@ def main(args=None):
 
     try:
         rclpy.spin(controller_node)
-
     except KeyboardInterrupt:
         pass
-
     finally:
         controller_node.destroy_node()
         rclpy.shutdown()
         cleanup()
-
 
 if __name__ == "__main__":
     main()
