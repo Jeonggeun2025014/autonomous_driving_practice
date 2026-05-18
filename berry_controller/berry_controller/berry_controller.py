@@ -35,7 +35,7 @@ PWM_PIN_DIR = [18, 20, 22, 24]
 PWM_PIN_VEL = [19, 21, 23, 25]
 
 PWM_FREQUENCY = 1000
-DEFAULT_SPEED = 40
+DEFAULT_SPEED = 20
 
 LEFT_WHEEL_FORWARD = gpio.HIGH
 LEFT_WHEEL_BACKWARD = gpio.LOW
@@ -58,6 +58,7 @@ for pin in PWM_PIN_VEL:
     pwm.start(0)
     pwms.append(pwm)
 
+
 # 모터 제어 함수
 def set_motor(index, direction, speed):
     # 방향 전환 전 잠깐 정지
@@ -76,9 +77,9 @@ def right_wheels(direction, speed):
     set_motor(3, direction, speed)
     
 
-def motor_forward(speed=DEFAULT_SPEED):
-    left_wheels(LEFT_WHEEL_FORWARD, speed)
-    right_wheels(RIGHT_WHEEL_FORWARD, speed)
+def motor_forward(speed, gap_angle):
+    left_wheels(LEFT_WHEEL_FORWARD, speed - gap_angle*0.2)
+    right_wheels(RIGHT_WHEEL_FORWARD, speed + gap_angle*0.2)
 
 def motor_backward(speed=DEFAULT_SPEED):
     left_wheels(LEFT_WHEEL_BACKWARD, speed)
@@ -100,6 +101,8 @@ def motor_stop():
 class BerryController(Node):
     def __init__(self):
         super().__init__("berry_controller")
+        self.current_gap_angle = 0.0
+        self.current_linear_x = 0.0
 
         self.cmd_vel_publisher = self.create_publisher(Twist, "cmd_vel", 10)
 
@@ -130,12 +133,10 @@ class BerryController(Node):
         linear_x = msg.linear.x
         angular_z = msg.angular.z
 
-        self.get_logger().info(
-            f"cmd_vel received: linear.x={linear_x:.2f}, angular.z={angular_z:.2f}"
-        )
+        self.current_linear_x = linear_x
 
         if linear_x > 0.01:
-            motor_forward()
+            motor_forward(DEFAULT_SPEED, self.current_gap_angle)
         elif linear_x < -0.01:
             motor_backward()
         elif angular_z > 0.01:
@@ -152,9 +153,16 @@ class BerryController(Node):
             self.get_logger().warn("No safe gap found")
             return
 
-        self.get_logger().info(
-            f"Widest gap center angle: {gap_angle:.2f} deg"
-        )
+        
+
+        if self.current_linear_x > 0.01:
+            # print(self.current_linear_x)
+            motor_forward(DEFAULT_SPEED, gap_angle)
+
+            self.get_logger().info(
+                f"Widest gap center angle: {gap_angle:.2f} deg"
+            )
+
 
     def find_widest_gap_angle(self, msg, safe_distance=0.5):
         range_count = len(msg.ranges)
@@ -235,7 +243,6 @@ class BerryController(Node):
 
         return gap_angle
 
-
 controller_node = None
 
 # Flask 라우터
@@ -314,3 +321,6 @@ if __name__ == "__main__":
 # sudo usermod -aG gpio auto
 # sudo chown root:root /dev/gpiomem
 # sudo chmod 666 /dev/gpiomem
+
+# rplidar
+# sudo chmod 777 /dev/ttyUSB0
