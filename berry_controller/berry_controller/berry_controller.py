@@ -35,7 +35,7 @@ PWM_PIN_DIR = [18, 20, 22, 24]
 PWM_PIN_VEL = [19, 21, 23, 25]
 
 PWM_FREQUENCY = 1000
-DEFAULT_SPEED = 20
+DEFAULT_SPEED = 40
 
 LEFT_WHEEL_FORWARD = gpio.HIGH
 LEFT_WHEEL_BACKWARD = gpio.LOW
@@ -78,8 +78,22 @@ def right_wheels(direction, speed):
     
 
 def motor_forward(speed, gap_angle):
-    left_wheels(LEFT_WHEEL_FORWARD, speed - gap_angle*0.2)
-    right_wheels(RIGHT_WHEEL_FORWARD, speed + gap_angle*0.2)
+    vel_left = speed - gap_angle
+    if vel_left <= 0:
+        vel_left = 0
+    elif vel_left >=100:
+        vel_left = 100
+
+    vel_right = speed + gap_angle
+    if vel_right <= 0:
+        vel_right = 0
+    elif vel_right >=100:
+        vel_right = 100
+    
+    print(vel_left, vel_right)
+
+    left_wheels(LEFT_WHEEL_FORWARD, vel_left)
+    right_wheels(RIGHT_WHEEL_FORWARD, vel_right)
 
 def motor_backward(speed=DEFAULT_SPEED):
     left_wheels(LEFT_WHEEL_BACKWARD, speed)
@@ -249,7 +263,7 @@ controller_node = None
 @app.route("/")
 def index():
     print(WEB_DIR)
-    return render_template("web_controller_10_week_4_direction.html")
+    return render_template("web_controller.html")
 
 @app.route("/forward")
 def forward():
@@ -318,6 +332,8 @@ def main(args=None):
 if __name__ == "__main__":
     main()
 
+
+# sudo groupadd gpio
 # sudo usermod -aG gpio auto
 # sudo chown root:root /dev/gpiomem
 # sudo chmod 666 /dev/gpiomem
